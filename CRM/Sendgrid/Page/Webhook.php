@@ -155,7 +155,10 @@ class CRM_Sendgrid_Page_Webhook extends CRM_Core_Page {
   }
 
   public static function spamreport($job_id, $event_queue_id, $hash, $event) {
-    CRM_Mailing_Event_BAO_SpamReport::report($event_queue_id);
+    // TODO: This needs to be replaced with something else like in
+    // https://github.com/cividesk/com.cividesk.email.sparkpost/blob/master/CRM/Sparkpost/Page/callback.php#L95
+    // which isn't ideal but will do the trick.
+    // CRM_Mailing_Event_BAO_SpamReport::report($event_queue_id);
     self::unsubscribe($job_id, $event_queue_id, $hash, $event);
   }
 
