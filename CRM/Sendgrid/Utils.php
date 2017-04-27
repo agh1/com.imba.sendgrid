@@ -3,23 +3,32 @@
 class CRM_SendGrid_Utils {
 
   /**
-   * Look up a job by ID.
+   * Look up a mailing ID by job ID.
    * @param int $jobId
    *   The ID number of the job.
-   * @return array
-   *   An array containing at least 'mailing_id' => [the mailing ID]
+   *
+   * @return int
+   *   The ID number of the corresponding mailing
    */
-  public static function getJobById($jobId) {
-    $jobCache = Civi::cache()->get('sendgridJobCache') ?: array();
-
-    if (empty($jobCache[$jobId])) {
-      $jobCache[$jobId] = civicrm_api3('MailingJob', 'getsingle', array(
-        'id' => $jobId,
-        'return' => 'mailing_id',
-      ));
-      Civi::cache()->set('sendgridJobCache', $jobCache);
+  public static function mailingIdFromJob($jobId) {
+    $cachedMailingIDs = Civi::cache()->get('sendgridMailingIds') ?: array();
+    if (empty($cachedMailingIDs[$jobId])) {
+      try {
+        $cachedMailingIDs[$jobId] = civicrm_api3('MailingJob', 'getvalue', array(
+          'return' => "mailing_id",
+          'id' => $jobId,
+        ));
+        Civi::cache()->get('sendgridMailingIds', $cachedMailingIDs);
+      }
+      catch (CiviCRM_API3_Exception $e) {
+        $error = $e->getMessage();
+        CRM_Core_Error::debug_log_message(ts('API Error: %1', array(
+          1 => $error,
+          'domain' => 'com.aghstrategies.sendgrid',
+        )));
+      }
     }
-    return $jobCache[$jobId];
+    return $cachedMailingIDs[$jobId];
   }
 
   /**
@@ -31,13 +40,13 @@ class CRM_SendGrid_Utils {
    *   The result of Mailing.getsingle.
    */
   public static function getMailingByJob($jobId) {
-    $job = self::getJobById($jobId);
+    $mailingId = self::mailingIdFromJob($jobId);
     $mailingCache = Civi::cache()->get('sendgridMailingCache') ?: array();
-    if (empty($mailingCache[$job['mailing_id']])) {
-      $mailingCache[$job['mailing_id']] = civicrm_api3('Mailing', 'getsingle', array('id' => $job['mailing_id']));
+    if (empty($mailingCache[$mailingId])) {
+      $mailingCache[$mailingId] = civicrm_api3('Mailing', 'getsingle', array('id' => $mailingId));
       Civi::cache()->set('sendgridMailingCache', $mailingCache);
     }
-    return $mailingCache[$job['mailing_id']];
+    return $mailingCache[$mailingId];
   }
 
   public static function getSettings() {
