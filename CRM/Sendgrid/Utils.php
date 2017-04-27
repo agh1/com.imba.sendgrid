@@ -47,7 +47,6 @@ class CRM_SendGrid_Utils {
       $settings = array(
         'secretcode' => NULL,
         'open_click_processor' => NULL,
-        'track_optional' => NULL,
       );
       foreach ($settings as $setting => $val) {
         try {
@@ -67,6 +66,26 @@ class CRM_SendGrid_Utils {
       Civi::cache()->set('sendgridSettings', $settings);
     }
     return $settings;
+  }
+
+  public static function saveSettings($settings) {
+    $existingSettings = Civi::cache()->get('sendgridSettings');
+    $settingsToSave = array();
+
+    foreach ($settings as $k => $v) {
+      $existingSettings[$k] = $v;
+      $settingsToSave["sendgrid_$k"] = $v;
+    }
+    try {
+      $settingsSaved = civicrm_api3('Setting', 'create', $settingsToSave);
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      $error = $e->getMessage();
+      CRM_Core_Error::debug_log_message(ts('API Error: %1', array(
+        1 => $error,
+        'domain' => 'com.aghstrategies.sendgrid',
+      )));
+    }
   }
 
 }

@@ -13,10 +13,6 @@
         <span class="description">{ts}Select where open and click-throughs should be processed. Either way, the same data is collected, stored, and reported.{/ts}</span>
       </td>
     </tr>
-    <tr>
-      <td></td>
-      <td>{$form.track_optional.html}</td>
-    </tr>
   </table>
   <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl"}</div>
   <div class="spacer"></div>

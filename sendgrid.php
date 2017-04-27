@@ -62,47 +62,24 @@ function sendgrid_civicrm_alterMailParams(&$params, $context) {
 function sendgrid_civicrm_buildForm($formName, &$form) {
   if (($formName == 'CRM_Mailing_Form_Settings') && ($form->elementExists('url_tracking'))) {
 
-  $settings = CRM_Sendgrid_Utils::getSettings();
-  $track = $settings['open_click_processor'] != 'Never';
-  $freeze = !$track || !$settings['track_optional'];
+    $settings = CRM_Sendgrid_Utils::getSettings();
+    $track = (CRM_Utils_Array::value('open_click_processor', $settings) != 'Never');
+    if (!$track) {
 
-  $el = $form->getElement('url_tracking');
-  if ($freeze)
-  $el->freeze();
-  $el = $form->getElement('open_tracking');
-  if ($freeze)
-  $el->freeze();
-  $form->setDefaults(array('url_tracking' => $track, 'open_tracking' => $track));
+      $toFreeze = array(
+        'url_tracking',
+        'open_tracking',
+      );
+      foreach ($toFreeze as $elName) {
+        $el = $form->getElement($elName);
+        $el->freeze();
+      }
+    }
+    $form->setDefaults(array(
+      'url_tracking' => $track,
+      'open_tracking' => $track,
+    ));
   }
-  elseif ($formName == 'CRM_Report_Form_Mailing_Detail') {
-  // this will check Spam Report in the report criteria,
-  // but it still doesn't cause that column to be displayed by default.
-  // I can't figure out how to make that happen.
-
-  $grp = $form->getElement('fields');
-  $els = $grp->getElements();
-  foreach($els as $el) {
-  if ($el->getName() == 'spam_id') {
-  $el->setChecked(true);
-  break;
-  }
-  }
-  }
-}
-
-/*
- * hook_civicrm_install
- */
-function sendgrid_civicrm_install() {
-  CRM_Core_DAO::executeQuery("CREATE TABLE IF NOT EXISTS `civicrm_mailing_event_spam_report` (
-    `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-    `event_queue_id` int(10) unsigned NOT NULL COMMENT 'FK to EventQueue',
-    `time_stamp` datetime NOT NULL COMMENT 'When this open event occurred.',
-    PRIMARY KEY (`id`),
-    KEY `FK_civicrm_mailing_event_opened_event_queue_id` (`event_queue_id`),
-    CONSTRAINT `FK_civicrm_mailing_event_spam_report_event_queue_id` FOREIGN KEY (`event_queue_id`) REFERENCES `civicrm_mailing_event_queue` (`id`) ON DELETE CASCADE
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;");
-  _sendgrid_civix_civicrm_install();
 }
 
 /*
@@ -110,72 +87,22 @@ function sendgrid_civicrm_install() {
  *
  * add "SendGrid Configuration" to the Mailings menu
  */
-function sendgrid_civicrm_navigationMenu(&$params) {
-  require_once('CRM/Core/BAO/Navigation.php');
-  // Check that our item doesn't already exist
-  $menu_item_search = array('url' => 'civicrm/sendgrid');
-  $menu_items = array();
-  CRM_Core_BAO_Navigation::retrieve($menu_item_search, $menu_items);
-  if (!empty($menu_items))
-  return;
+function sendgrid_civicrm_navigationMenu(&$menu) {
 
-  $navID = CRM_Core_DAO::singleValueQuery("SELECT max(id) FROM civicrm_navigation");
-  if (is_integer($navID))
-  $navID++;
+  $adder = new CRM_Sendgrid_NavAdd($menu);
 
-  // Find the CiviMail menu
-  $parentID = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Navigation', 'Mailings', 'id', 'name');
-  $params[$parentID]['child'][$navID] = array(
-  'attributes' => array(
-  'label' => ts('SendGrid Configuration'),
-  'name' => 'SendGrid Configuration',
-  'url' => 'civicrm/sendgrid',
-  'permission' => 'access CiviMail,administer CiviCRM',
-  'operator' => 'AND',
-  'separator' => 1,
-  'parentID' => $parentID,
-  'navID' => $navID,
-  'active' => 1
-  )
+  $attributes = array(
+    'label' => ts('SendGrid Configuration'),
+    'name' => 'SendGrid Configuration',
+    'url' => 'civicrm/sendgrid',
+    'permission' => 'access CiviMail,administer CiviCRM',
+    'operator' => 'AND',
+    'separator' => 1,
+    'active' => 1,
   );
+  $adder->addItem($attributes, array('Mailings'));
+  $menu = $adder->getMenu();
 }
-
-/**
- * Implementation of hook_civicrm_uninstall
- *
- * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_uninstall
- */
-function sendgrid_civicrm_uninstall() {
-  CRM_Core_DAO::executeQuery("DROP TABLE `civicrm_mailing_event_spam_report`");
-  _sendgrid_civix_civicrm_uninstall();
-}
-
-/*
- * sendgrid_save_settings
- *
- * save settings to database
- */
-function sendgrid_save_settings($settings) {
-  global $sendgrid_settings;
-  require_once 'CRM/Core/BAO/Setting.php';
-  $settingsToSave = array();
-
-  foreach($settings as $k => $v) {
-  $sendgrid_settings[$k] = $v;
-  $settingsToSave["sendgrid_$k"] = $v;
-  }
-  try {
-  $settingsSaved = civicrm_api3('Setting', 'create', $settingsToSave);
-  }
-  catch (CiviCRM_API3_Exception $e) {
-  $error = $e->getMessage();
-  CRM_Core_Error::debug_log_message(ts('API Error: %1', array(1 => $error, 'domain' => 'com.imba.sendgrid')));
-  }
-}
-
-CRM_Core_Resources::singleton()
-  ->addScriptFile('com.imba.sendgrid', 'js/sendgrid.js')
-  ->addVars('sendgrid', CRM_Sendgrid_Utils::getSettings());
 
 // *************************************
 // THE REST IS JUST STANDARD BOILERPLATE

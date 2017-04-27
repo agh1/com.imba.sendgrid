@@ -15,11 +15,4 @@ return array(
     'type' => 'String',
     'default' => 'CiviMail',
   ),
-  'sendgrid_track_optional' => array(
-    'group_name' => 'SendGrid Preferences',
-    'group' => 'sendgrid',
-    'name' => 'sendgrid_track_optional',
-    'type' => 'Integer',
-    'default' => 1,
-  ),
 );
