@@ -19,7 +19,7 @@ function sendgrid_civicrm_alterMailParams(&$params, $context) {
   }
 
   try {
-    $mailing = CRM_SendGrid_Utils::getMailingByJob($job_id);
+    $mailing = CRM_Sendgrid_Utils::getMailingByJob($job_id);
     $settings = CRM_Sendgrid_Utils::getSettings();
     $clicktrack = (int) ($settings['open_click_processor'] == 'SendGrid' && $mailing['url_tracking']);
     $opentrack = (int) ($settings['open_click_processor'] == 'SendGrid' && $mailing['open_tracking']);
