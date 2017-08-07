@@ -1,6 +1,6 @@
 <?php
 
-class CRM_SendGrid_Utils {
+class CRM_Sendgrid_Utils {
 
   /**
    * Look up a mailing ID by job ID.
