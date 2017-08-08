@@ -8,3 +8,45 @@ The email events that SendGrid sends notifications of include: _Processed, Dropp
 The extension allows the site admin to select if they would like SendGrid or CiviCRM to process _Open_ and _Click-through_ events, and if tracking should be made optional per mailing. The extension adds a Mail Spam Report template and includes spam reports on the Mail Summary and the Detailed Report for the mailing. The extension also supports authentication with a username and password.
 
 To install add to your CiviCRM Extentions folder, enable, then go to Mailings > SendGrid Configuration to configure settings. The extension will display the HTTP Post URL to configure in your SendGrid Event Notifications App, as well as other server configuration instructions if needed.
+
+
+### Testing
+
+To recreate a bounce message being sent from sendgrid to be processed by this extension issue,
+
+Go to {yoururl}/wp-admin/admin.php?page=CiviCRM&q=civicrm%2Fsendgrid (can be found thru the ui by going to Civi Admin Menu -> Mailings -> SendGrid Configuration) document the HTTP Post URL
+
+Find a bounce in sendgrid on sendgrid.com, document the "email", "smtp-id", "processed string (timestamp)", and "reason"
+
+Find that mailing in civi by going to the api and doing a get for Entity "MailingEventQueue" for the contact with the email
+
+```php
+
+$result = civicrm_api3('MailingEventQueue', 'get', array(
+  'sequential' => 1,
+  'contact_id' => 18309,
+));
+
+```
+Document the "id", "job_id", "email_id", "contact_id", and the "hash" from the api call,
+
+Create a curl command that looks like this:
+
+```
+
+curl -X POST -H "Content-Type: application/json" -d '[
+   {
+     "event": "bounce",
+     "email": "{email from sendgrid}",
+     "smtp-id": "{smtp-id from sendgrid}",
+     "timestamp": {processed string from sendgrid made into strtotime()},
+     "job_id": {job_id from civi},
+     "hash": "{hash from civi}",
+     "event_queue_id": {id from civi},
+     "reason": "{reason from sendgrid}"
+   }
+ ]' --url "{HTTP Post URL}"
+
+```
+
+Run it from the command line. Look up that contact and check activities, then go to the mailing report the bounce should be reported.
