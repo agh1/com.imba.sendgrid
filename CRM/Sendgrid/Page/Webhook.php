@@ -30,6 +30,7 @@ class CRM_Sendgrid_Page_Webhook extends CRM_Core_Page {
           CRM_Core_Error::debug_log_message("Sendgrid webhook (deferred)\n" . print_r($event, TRUE));
           break;
 
+        case 'blocked':
         case 'bounce':
           self::bounce($event);
           break;
@@ -43,6 +44,9 @@ class CRM_Sendgrid_Page_Webhook extends CRM_Core_Page {
           break;
 
         case 'dropped':
+          if (empty($event->reason)) {
+            Civi::log()->debug('Sendgrid dropped, no reason' . print_r($event, TRUE));
+          }
           // if dropped because of previous bounce, unsubscribe, or spam report, treat it as such...
           // ...otherwise log it
           if ($event->reason == 'Bounced Address') {
