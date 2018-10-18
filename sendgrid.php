@@ -2,12 +2,12 @@
 
 require_once 'sendgrid.civix.php';
 
-/*
+/**
  * Implements hook_civicrm_alterMailParams().
  */
 function sendgrid_civicrm_alterMailParams(&$params, $context) {
 
-  if ($context != 'civimail') {
+  if (!in_array($context, ['civimail', 'flexmailer'])) {
     return;
   }
 
